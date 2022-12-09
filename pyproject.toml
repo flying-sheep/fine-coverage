@@ -7,7 +7,7 @@ name = 'fine-coverage'
 description = 'x'
 readme = 'README.rst'
 requires-python = '>=3.11'
-license = 'GPL'
+license = 'GPL-3.0'
 keywords = []
 authors = [
   { name = 'Philipp A.', email = 'flying-sheep@web.de' },
@@ -31,32 +31,12 @@ Source = 'https://github.com/flying-sheep/fine-coverage'
 path = 'fine_coverage/__about__.py'
 
 [tool.hatch.envs.default]
-dependencies = [
-  'pytest',
-  'pytest-cov',
-]
+dependencies = ['pytest']
 [tool.hatch.envs.default.scripts]
-cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=fine_coverage --cov=tests'
-no-cov = 'cov --no-cov'
+test = 'pytest'
 
 [[tool.hatch.envs.test.matrix]]
-python = ['311']
-
-[tool.coverage.run]
-branch = true
-parallel = true
-omit = [
-  'fine_coverage/__about__.py',
-]
-
-[tool.coverage.report]
-exclude_lines = [
-  'no cov',
-  'if __name__ == .__main__.:',
-  'if TYPE_CHECKING:',
-]
+python = ['3.11']
 
 [tool.pytest.ini_options]
-addopts = [
-    "--import-mode=importlib",
-]
+addopts = ['--import-mode=importlib']
