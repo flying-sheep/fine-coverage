@@ -1,6 +1,7 @@
 from __future__ import annotations
 import sys
 import inspect
+from collections.abc import Iterable
 
 from types import FrameType
 from typing import Any, Literal, Self, Protocol
@@ -9,6 +10,14 @@ from typing import Any, Literal, Self, Protocol
 Event = Literal['call', 'line', 'return', 'exception', 'opcode']
 class TraceFunction(Protocol):
     def __call__(self, frame: FrameType, event: Event, arg: Any) -> Self | None: ...
+
+
+def index_source(source: Iterable, start_line: int, end_line: int, start_column: int, end_column: int) -> str:
+    if start_line == end_line:
+        return source[start_line-1][start_column:end_column]
+    else:
+        first_line, *lines, last_line = source
+        return ''.join([first_line[start_column:], *lines, last_line[:end_column]])
 
 
 class Tracer:
@@ -26,9 +35,8 @@ class Tracer:
         return self.process
     
     def process(self, frame: FrameType, event: Event, arg: Any) -> TraceFunction | None:
-        print(event)
-        print(inspect.getsource(frame.f_code))
-        list(frame.f_code.co_positions())
+        full_source, _ = inspect.findsource(frame)
+        print(event, [index_source(full_source, *positions) for positions in frame.f_code.co_positions()])
         match event:
             case 'call':
                 pass
