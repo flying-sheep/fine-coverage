@@ -25,6 +25,6 @@ Installation
 License
 -------
 
-`fine-coverage` is distributed under the terms of the MIT_ license.
+`fine-coverage` is distributed under the terms of the GPL_ license.
 
-.. _MIT: https://spdx.org/licenses/GPL.html
+.. _GPL: https://spdx.org/licenses/GPL.html
