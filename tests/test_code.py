@@ -19,3 +19,5 @@ def test_trinary():
     mod = load_module(HERE / 'code.py')
     with Tracer() as tracer:
         mod.trinary()
+    for locs in tracer.events:
+        print(locs.file, dict.fromkeys(locs.sources()).keys())
