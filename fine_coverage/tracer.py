@@ -4,9 +4,10 @@ import inspect
 import linecache
 from dataclasses import dataclass, field, KW_ONLY
 from collections.abc import Iterable, Collection, Generator
-
 from types import FrameType
 from typing import Any, Literal, Self, Protocol, NamedTuple
+
+from .ast import parse, Span
 
 
 Event = Literal['call', 'line', 'return', 'exception', 'opcode']
@@ -16,19 +17,19 @@ class TraceFunction(Protocol):
 
 class CodeLocs(NamedTuple):
     file: str | None
-    locs: Collection[tuple[int, int, int, int]]
+    locs: Collection[Span]
 
     def sources(self) -> Generator[str, None, None]:
         if self.file is None:
             return
         # TODO: positions are utf-8 indices, not string indices
         source = linecache.getlines(self.file)
-        for start_line, end_line, start_column, end_column in self.locs: 
-            if start_line == end_line:
-                yield source[start_line-1][start_column:end_column]
+        for start, end in self.locs: 
+            if start.line == end.line:
+                yield source[start.line-1][start.col:end.col]
             else:
                 first_line, *lines, last_line = source
-                yield ''.join([first_line[start_column:], *lines, last_line[:end_column]])
+                yield ''.join([first_line[start.col:], *lines, last_line[:end.col]])
 
 
 @dataclass
@@ -54,7 +55,7 @@ class Tracer:
             case 'call':
                 pass
             case 'line':
-                self.events.append(CodeLocs(file_name, list(frame.f_code.co_positions())))
+                self.events.append(CodeLocs(file_name, [Span.from_tuple(pos) for pos in frame.f_code.co_positions()]))
             case 'return':
                 pass
             case 'exception':
