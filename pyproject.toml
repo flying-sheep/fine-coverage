@@ -34,8 +34,7 @@ path = 'fine_coverage/__about__.py'
 dependencies = ['pytest']
 [tool.hatch.envs.default.scripts]
 test = 'pytest'
-
-[[tool.hatch.envs.test.matrix]]
+[[tool.hatch.envs.default.matrix]]
 python = ['3.11']
 
 [tool.pytest.ini_options]
