@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import os
 from collections.abc import Generator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -21,6 +22,18 @@ class Span(NamedTuple):
         assert span[0] is not None
         assert span[2] is not None
         return Span(Pos(span[0], span[2]), Pos(span[1], span[3]))
+
+    @classmethod
+    def from_ast(cls, node: ast.AST) -> Self:
+        assert node.lineno is not None
+        assert node.col_offset is not None
+        return Span(
+            Pos(node.lineno, node.col_offset),
+            Pos(
+                node.lineno if node.end_lineno is None else node.end_lineno,
+                node.col_offset if node.end_col_offset is None else node.end_col_offset,
+            ),
+        )
 
     def __lt__(self, other: Span) -> bool:
         if self == other:
@@ -48,20 +61,8 @@ class Visitor(ast.NodeVisitor):
         }
         return not any(superspan_of.values())
 
-    @staticmethod
-    def pos(node: ast.AST) -> Span:
-        assert node.lineno is not None
-        assert node.col_offset is not None
-        return Span(
-            Pos(node.lineno, node.col_offset),
-            Pos(
-                node.lineno if node.end_lineno is None else node.end_lineno,
-                node.col_offset if node.end_col_offset is None else node.end_col_offset,
-            ),
-        )
-
     def add_pot_branch(self, node: ast.expr):
-        pos = self.pos(node)
+        pos = Span.from_ast(node)
         self.pot_branches[pos] = node
 
     # TODO: only add if leaf expression
@@ -80,15 +81,13 @@ class Visitor(ast.NodeVisitor):
 
 
 def parse(
-    source: str | None = None, file_name: str | Path = '<unknown>'
+    source: str | bytes | None = None, file_name: str | bytes | Path = '<unknown>'
 ) -> Generator[Span, None, None]:
     if source is None:
         if file_name == '<unknown>':
             raise ValueError('Specify source and/or file_name')
-        with Path(file_name).open() as f:
-            mod: ast.Module = ast.parse(f, file_name)
-    else:
-        mod: ast.Module = ast.parse(source, file_name)
+        source = Path(os.fsdecode(file_name)).read_bytes()
+    mod = ast.parse(source, str(file_name))
 
     visitor = Visitor()
     visitor.generic_visit(mod)
