@@ -27,6 +27,11 @@ class Span(NamedTuple):
             return False
         return self.start >= other.start and self.end <= other.end
 
+    def __gt__(self, other: Span) -> bool:
+        if self == other:
+            return False
+        return self.start <= other.start and self.end >= other.end
+
 
 @dataclass
 class Visitor(ast.NodeVisitor):
@@ -39,7 +44,7 @@ class Visitor(ast.NodeVisitor):
 
     def is_leaf(self, span: Span) -> bool:
         superspan_of = {
-            other_span: span < other_span 
+            other_span: span > other_span
             for other_span in self.pot_branches.keys() - span
         }
         return not any(superspan_of.values())
