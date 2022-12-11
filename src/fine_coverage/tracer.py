@@ -42,7 +42,7 @@ class Tracer:
     old_trace: TraceFunction | None = None
 
     def __enter__(self) -> Self:
-        self.old_trace = sys.gettrace()
+        self.old_trace = cast(TraceFunction | None, sys.gettrace())
         sys.settrace(self.dispatch)
         return self
 

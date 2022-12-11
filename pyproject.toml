@@ -31,9 +31,10 @@ Source = 'https://github.com/flying-sheep/fine-coverage'
 path = 'src/fine_coverage/__about__.py'
 
 [tool.hatch.envs.default]
-dependencies = ['pytest', 'build']
+dependencies = ['pytest', 'build', 'pyright']
 [tool.hatch.envs.default.scripts]
 test = 'pytest'
+typecheck = 'pyright'
 build = 'python -m build'
 [[tool.hatch.envs.default.matrix]]
 python = ['3.11']

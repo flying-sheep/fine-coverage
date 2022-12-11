@@ -80,15 +80,13 @@ class Visitor(ast.NodeVisitor):
 
 
 def parse(
-    source: str | None = None, file_name: str | Path = '<unknown>'
+    source: str | bytes | None = None, file_name: str | Path = '<unknown>'
 ) -> Generator[Span, None, None]:
     if source is None:
         if file_name == '<unknown>':
             raise ValueError('Specify source and/or file_name')
-        with Path(file_name).open() as f:
-            mod: ast.Module = ast.parse(f, file_name)
-    else:
-        mod: ast.Module = ast.parse(source, file_name)
+        source = Path(file_name).read_bytes()
+    mod = ast.parse(source, file_name)
 
     visitor = Visitor()
     visitor.generic_visit(mod)
