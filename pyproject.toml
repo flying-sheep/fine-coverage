@@ -33,9 +33,9 @@ path = 'src/fine_coverage/__about__.py'
 [tool.hatch.envs.default]
 dependencies = ['pytest', 'build', 'pyright']
 [tool.hatch.envs.default.scripts]
-test = 'pytest'
-typecheck = 'pyright'
-build = 'python -m build'
+test = 'pytest {args}'
+typecheck = 'pyright {args}'
+build = 'python -m build {args}'
 [[tool.hatch.envs.default.matrix]]
 python = ['3.11']
 
