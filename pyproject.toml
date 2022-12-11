@@ -19,8 +19,13 @@ classifiers = [
   'Programming Language :: Python :: Implementation :: CPython',
   'Programming Language :: Python :: Implementation :: PyPy',
 ]
-dependencies = []
+dependencies = [
+  'rich',
+]
 dynamic = ['version']
+
+[project.scripts]
+fine-coverage = 'fine_coverage.cli:run'
 
 [project.urls]
 Documentation = 'https://github.com/flying-sheep/fine-coverage#readme'
