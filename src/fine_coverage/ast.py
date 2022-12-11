@@ -65,14 +65,12 @@ class Visitor(ast.NodeVisitor):
         pos = Span.from_ast(node)
         self.pot_branches[pos] = node
 
-    # TODO: only add if leaf expression
     def visit_BoolOp(self, node: ast.BoolOp) -> Any:
         self.add_pot_branch(node.values[0])
         self.add_pot_branch(node.values[1])
         self.generic_visit(node)
         return node
 
-    # TODO: only add if leaf expression
     def visit_IfExp(self, node: ast.IfExp) -> Any:
         self.add_pot_branch(node.body)
         self.add_pot_branch(node.orelse)
