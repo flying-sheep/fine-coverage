@@ -74,11 +74,7 @@ class Tracer:
             case 'call':
                 pass
             case 'line':
-                self.events.append(
-                    CodeLocs.from_tuples(
-                        file_name, [Span.from_tuple(pos) for pos in frame.f_code.co_positions()]
-                    )
-                )
+                self.events.append(CodeLocs.from_tuples(file_name, frame.f_code.co_positions()))
             case 'return':
                 pass
             case 'exception':
