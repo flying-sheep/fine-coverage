@@ -28,14 +28,37 @@ Issues = 'https://github.com/flying-sheep/fine-coverage/issues'
 Source = 'https://github.com/flying-sheep/fine-coverage'
 
 [tool.hatch.version]
-path = 'fine_coverage/__about__.py'
+path = 'src/fine_coverage/__about__.py'
 
 [tool.hatch.envs.default]
-dependencies = ['pytest']
+dependencies = ['pytest', 'build']
 [tool.hatch.envs.default.scripts]
 test = 'pytest'
+build = 'python -m build'
 [[tool.hatch.envs.default.matrix]]
 python = ['3.11']
 
 [tool.pytest.ini_options]
 addopts = ['--import-mode=importlib']
+
+[tool.pyright]
+include = ['src']
+
+[tool.black]
+line-length = 100
+skip-string-normalization = true
+
+[tool.ruff]
+line-length = 100
+select = [
+    # Pyflakes
+    'F',
+    # Pycodestyle
+    'E',
+    'W',
+    # isort
+    'I001'
+]
+src = ['src', 'tests']
+[tool.ruff.per-file-ignores]
+"src/fine_coverage/tracer.py" = ['E999']  # https://github.com/charliermarsh/ruff/issues/282

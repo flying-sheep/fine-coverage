@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Generator
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, NamedTuple, Self
-from dataclasses import dataclass, field
-from collections.abc import Generator
 
 
 class Pos(NamedTuple):
@@ -15,7 +15,7 @@ class Pos(NamedTuple):
 class Span(NamedTuple):
     start: Pos
     end: Pos
-    
+
     @classmethod
     def from_tuple(cls, span: tuple[int, int, int, int]) -> Self:
         assert span[0] is not None
@@ -44,8 +44,7 @@ class Visitor(ast.NodeVisitor):
 
     def is_leaf(self, span: Span) -> bool:
         superspan_of = {
-            other_span: span > other_span
-            for other_span in self.pot_branches.keys() - span
+            other_span: span > other_span for other_span in self.pot_branches.keys() - span
         }
         return not any(superspan_of.values())
 
@@ -80,7 +79,9 @@ class Visitor(ast.NodeVisitor):
         return node
 
 
-def parse(source: str | None = None, file_name: str | Path = '<unknown>') -> Generator[Span, None, None]:
+def parse(
+    source: str | None = None, file_name: str | Path = '<unknown>'
+) -> Generator[Span, None, None]:
     if source is None:
         if file_name == '<unknown>':
             raise ValueError('Specify source and/or file_name')
