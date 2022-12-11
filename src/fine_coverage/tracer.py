@@ -4,8 +4,8 @@ import inspect
 import linecache
 from dataclasses import dataclass, field, KW_ONLY
 from collections.abc import Iterable, Collection, Generator
-from types import FrameType, cast
-from typing import Any, Literal, Self, Protocol, NamedTuple
+from types import FrameType
+from typing import cast, Any, Literal, Self, Protocol, NamedTuple
 
 from .ast import parse, Span
 
@@ -33,7 +33,7 @@ class CodeLocs(NamedTuple):
             file,
             [
                 Span.from_tuple(cast(tuple[int, int, int, int], ls))
-                for ls in _locs
+                for ls in locs
                 if all(l is not None for l in ls)
             ],
         )
@@ -58,12 +58,12 @@ class Tracer:
     old_trace: TraceFunction | None = None
 
     def __enter__(self) -> Self:
-        self.old_trace = sys.gettrace()
-        sys.settrace(self.dispatch)
+        self.old_trace = cast(TraceFunction, sys.gettrace())
+        sys.settrace(self.dispatch)  # type: ignore
         return self
 
     def __exit__(self, typ, value, traceback):
-        sys.settrace(self.old_trace)
+        sys.settrace(self.old_trace)  # type: ignore
 
     def dispatch(self, frame: FrameType, event: Literal['call'], arg: Any) -> TraceFunction:
         return self.process
