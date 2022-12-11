@@ -2,7 +2,6 @@ from collections.abc import Collection
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from rich.highlighter import Highlighter
 from rich.text import Text
 
 from .ast import Span, parse
@@ -10,12 +9,12 @@ from .tracer import CodeLocs
 
 
 @dataclass
-class TraceHighlighter(Highlighter):
+class TraceHighlighter:
     events: Collection[CodeLocs]
     spans: dict[str, list[Span]] = field(init=False)
 
     def __post_init__(self):
-        file_paths = {locs.file for locs in self.events}
+        file_paths: set[str] = {locs.file for locs in self.events if locs is not None}
         self.spans = {file_path: list(parse(file_name=file_path)) for file_path in file_paths}
 
     def highlight_mod(self, file_path: str) -> Text:
