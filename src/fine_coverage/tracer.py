@@ -4,7 +4,7 @@ import inspect
 import linecache
 from dataclasses import dataclass, field, KW_ONLY
 from collections.abc import Iterable, Collection, Generator
-from types import FrameType
+from types import FrameType, cast
 from typing import Any, Literal, Self, Protocol, NamedTuple
 
 from .ast import parse, Span
@@ -20,16 +20,23 @@ class TraceFunction(Protocol):
 
 class CodeLocs(NamedTuple):
     file: str | None
-    _locs: InitVar[Iterable[Span | tuple[int | None, int | None, int | None, int | None]]] = ()
-    locs: Collection[Span] = field(init=False)
+    locs: Collection[Span] = ()
 
-    def __post_init__(self, _locs) -> None:
+    @classmethod
+    def from_tuples(
+        cls,
+        file: str | None,
+        locs: Iterable[tuple[int | None, int | None, int | None, int | None]],
+    ) -> Self:
         # Skip incomplete or missing spans
-        self.locs = [
-            (ls if isinstance(ls, Span) else Span.from_tuple(cast(tuple[int, int, int, int], ls)))
-            for ls in _locs
-            if all(l is not None for l in ls)
-        ]
+        return cls(
+            file,
+            [
+                Span.from_tuple(cast(tuple[int, int, int, int], ls))
+                for ls in _locs
+                if all(l is not None for l in ls)
+            ],
+        )
 
     def sources(self) -> Generator[str, None, None]:
         if self.file is None:
@@ -68,7 +75,7 @@ class Tracer:
                 pass
             case 'line':
                 self.events.append(
-                    CodeLocs(
+                    CodeLocs.from_tuples(
                         file_name, [Span.from_tuple(pos) for pos in frame.f_code.co_positions()]
                     )
                 )
