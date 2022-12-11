@@ -20,7 +20,16 @@ class TraceFunction(Protocol):
 
 class CodeLocs(NamedTuple):
     file: str | None
-    locs: Collection[Span]
+    _locs: InitVar[Iterable[Span | tuple[int | None, int | None, int | None, int | None]]] = ()
+    locs: Collection[Span] = field(init=False)
+
+    def __post_init__(self, _locs) -> None:
+        # Skip incomplete or missing spans
+        self.locs = [
+            (ls if isinstance(ls, Span) else Span.from_tuple(cast(tuple[int, int, int, int], ls)))
+            for ls in _locs
+            if all(l is not None for l in ls)
+        ]
 
     def sources(self) -> Generator[str, None, None]:
         if self.file is None:
@@ -42,7 +51,7 @@ class Tracer:
     old_trace: TraceFunction | None = None
 
     def __enter__(self) -> Self:
-        self.old_trace = cast(TraceFunction | None, sys.gettrace())
+        self.old_trace = sys.gettrace()
         sys.settrace(self.dispatch)
         return self
 
