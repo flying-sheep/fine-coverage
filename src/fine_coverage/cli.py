@@ -17,5 +17,6 @@ def run():
     with Tracer() as tracer:
         run_module(mod)
     highlighter = TraceHighlighter(tracer.events)
+    # TODO: add --cov option or so
     rich.print(highlighter.highlight_mod(str(HERE / 'ast.py')))
     sys.argv = argv
