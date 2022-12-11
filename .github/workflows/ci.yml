@@ -25,4 +25,4 @@ jobs:
       with:
         version: 1.1.244
     - name: Tests
-      run: hatch test -v
+      run: hatch run test -v
