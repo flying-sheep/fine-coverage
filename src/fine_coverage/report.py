@@ -14,12 +14,12 @@ class TraceHighlighter:
     spans: dict[str, list[Span]] = field(init=False)
 
     def __post_init__(self):
-        file_paths: set[str] = {locs.file for locs in self.events if locs is not None}
+        file_paths = {locs.file for locs in self.events if locs.file is not None}
         self.spans = {file_path: list(parse(file_name=file_path)) for file_path in file_paths}
 
     def highlight_mod(self, file_path: str) -> Text:
         # TODO: UTF-8
-        text = Text(Path(file_path).read_text().splitlines())
+        text = Text(Path(file_path).read_text())
         for span in self.spans[file_path]:
             start, end = span.start.col, span.end.col  # TODO: translate line positions to indices
             covered = any(
