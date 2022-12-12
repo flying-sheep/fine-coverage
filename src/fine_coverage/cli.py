@@ -25,5 +25,5 @@ def run():
     sys.argv = argv
 
     highlighter = TraceHighlighter(tracer.events)
-    for mod_file in {locs.file for locs in tracer.events}:
+    for mod_file in {locs.file for locs in tracer.events if locs.file is not None}:
         rich.print(highlighter.highlight_mod(mod_file))
