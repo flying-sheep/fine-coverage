@@ -24,8 +24,9 @@ def run():
     argv = sys.argv
     args, passed_args = parser.parse_known_args(argv[1:])
     sys.argv = [sys.argv[0], *passed_args]
+    tracer = Tracer(args.cov)
     try:
-        with Tracer(args.cov) as tracer:
+        with tracer:
             run_module(args.module, run_name='__main__', alter_sys=True)
     except SystemExit:
         pass
