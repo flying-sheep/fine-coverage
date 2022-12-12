@@ -19,10 +19,14 @@ jobs:
         python-version: '3.11'
         cache: pip
         cache-dependency-path: '**/pyproject.toml'
-    - name: Install dependencies
-      run: pip install --upgrade pip wheel hatch
+    - run: pip install --upgrade pip wheel hatch
+    - id: hatch
+      run: |
+        hatch env create || exit 1
+        echo "venv=$(hatch env find)" >> $GITHUB_OUTPUT
     - uses: jakebailey/pyright-action@v1
       with:
         version: 1.1.244
     - name: Tests
+      if: success() || failure()
       run: hatch run test -v

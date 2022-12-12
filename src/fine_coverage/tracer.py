@@ -31,11 +31,11 @@ class CodeLocs(NamedTuple):
         # Skip incomplete or missing spans
         return cls(
             file,
-            [
+            dict.fromkeys(
                 Span.from_tuple(cast(tuple[int, int, int, int], ls))
                 for ls in locs
                 if all(l is not None for l in ls)
-            ],
+            ).keys(),
         )
 
     def sources(self) -> Generator[str, None, None]:
@@ -53,6 +53,7 @@ class CodeLocs(NamedTuple):
 
 @dataclass
 class Tracer:
+    module: str | None = None
     _: KW_ONLY
     events: list[CodeLocs] = field(default_factory=list)
     old_trace: TraceFunction | None = None
@@ -69,6 +70,10 @@ class Tracer:
         return self.process
 
     def process(self, frame: FrameType, event: Event, arg: Any) -> TraceFunction | None:
+        if self.module is not None and not (
+            frame.f_globals.get('__name__', '').startswith(self.module)
+        ):
+            return None
         file_name = inspect.getsourcefile(frame)
         match event:
             case 'call':
