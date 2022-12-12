@@ -55,9 +55,12 @@ class TraceHighlighter:
             # Get AST spans for this line. Assumes non-overlapping spans
             spans = sorted(
                 [
-                    LineSpan(
-                        0 if span.start.line < l else span.start.col,
-                        len(line) if span.end.line > l else span.end.col,
+                    (
+                        LineSpan(
+                            0 if span.start.line < l else span.start.col,
+                            len(line) if span.end.line > l else span.end.col,
+                        ),
+                        'green' if self.covered(file_path, span) else 'red',
                     )
                     for span in self.spans[file_path]
                     if span.start.line <= l and span.end.line >= l
@@ -66,7 +69,7 @@ class TraceHighlighter:
             # Add unstyled spans for parts we don’t measure coverage for.
             # This could be done using `text.stylize` if we had char indices instead of UTF-8.
             span_styles = intersperse(
-                [(span, 'green' if self.covered(file_path, span) else 'red') for span in spans],
+                spans,
                 lambda prev, next_: (
                     LineSpan(
                         0 if prev is None else prev[0].end,
