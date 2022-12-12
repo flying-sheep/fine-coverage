@@ -27,8 +27,6 @@ jobs:
     - uses: jakebailey/pyright-action@v1
       with:
         version: 1.1.244
-        venv-path: ${{ steps.hatch.outputs.venv }}/..
-        extra-args: '--venv=py3.11'
     - name: Tests
       if: success() || failure()
       run: hatch run test -v
