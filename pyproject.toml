@@ -21,6 +21,7 @@ classifiers = [
 ]
 dependencies = [
   'rich',
+  'rich-argparse',
 ]
 dynamic = ['version']
 
