@@ -38,7 +38,7 @@ while running the equivalent of `python -m pytest -v`.
 Below you see an excerpt from the output when run on its own code.
 So far only tracks `and`, `or`, and `if else` expressions.
 
-![screenshot](screenshot.png)
+![screenshot](./screenshot.png)
 
 Installation
 ------------
