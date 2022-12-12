@@ -66,6 +66,10 @@ select = [
     # isort
     'I001'
 ]
+ignore = [
+  # Ambiguous variable/class/… name
+  'E74',
+]
 src = ['src', 'tests']
 [tool.ruff.per-file-ignores]
 "src/fine_coverage/tracer.py" = ['E999']  # https://github.com/charliermarsh/ruff/issues/282
