@@ -35,6 +35,9 @@ class LineSpan(NamedTuple):
     start: int
     end: int
 
+    def __len__(self) -> int:
+        return self.end - self.start
+
 
 @dataclass
 class TraceHighlighter:
@@ -49,6 +52,7 @@ class TraceHighlighter:
         lines = Path(file_path).read_bytes().splitlines()
         text = Text()
         for l, line in enumerate(lines, 1):
+            # Get AST spans for this line. Assumes non-overlapping spans
             spans = sorted(
                 [
                     LineSpan(
@@ -59,6 +63,8 @@ class TraceHighlighter:
                     if span.start.line <= l and span.end.line >= l
                 ]
             )
+            # Add unstyled spans for parts we don’t measure coverage for.
+            # This could be done using `text.stylize` if we had char indices instead of UTF-8.
             span_styles = intersperse(
                 [(span, 'green' if self.covered(file_path, span) else 'red') for span in spans],
                 lambda prev, next_: (
@@ -70,7 +76,8 @@ class TraceHighlighter:
                 ),
             )
             for span, style in span_styles:
-                if span.start == span.end:
+                if len(span) == 0:
+                    # `intersperse` leaves 0-sized spans at start and/or end.
                     continue
                 text.append(line[span.start : span.end].decode('utf-8'), style)
             text.append('\n')
