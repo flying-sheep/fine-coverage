@@ -31,11 +31,11 @@ class CodeLocs(NamedTuple):
         # Skip incomplete or missing spans
         return cls(
             file,
-            [
+            dict.fromkeys(
                 Span.from_tuple(cast(tuple[int, int, int, int], ls))
                 for ls in locs
                 if all(l is not None for l in ls)
-            ],
+            ).keys(),
         )
 
     def sources(self) -> Generator[str, None, None]:
