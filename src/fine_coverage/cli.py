@@ -3,7 +3,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 from runpy import run_module
 
-import rich
+from rich.console import Console
+from rich.traceback import install
 from rich_argparse import ArgumentDefaultsRichHelpFormatter
 
 from .report import TraceHighlighter
@@ -13,6 +14,9 @@ HERE = Path(__file__).parent
 
 
 def run():
+    console = Console()
+    install(console=console, show_locals=True)
+
     parser = ArgumentParser(formatter_class=ArgumentDefaultsRichHelpFormatter)
     parser.add_argument('module')
     parser.add_argument('--cov', type=str)
@@ -29,4 +33,5 @@ def run():
 
     highlighter = TraceHighlighter(tracer.events)
     for mod_file in {locs.file for locs in tracer.events if locs.file is not None}:
-        rich.print(highlighter.highlight_mod(mod_file))
+        console.rule(mod_file)
+        console.print(highlighter.highlight_mod(mod_file))
