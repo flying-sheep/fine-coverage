@@ -20,8 +20,11 @@ def run():
     argv = sys.argv
     args, passed_args = parser.parse_known_args(argv[1:])
     sys.argv = [sys.argv[0], *passed_args]
-    with Tracer(args.cov) as tracer:
-        run_module(args.module, alter_sys=True)
+    try:
+        with Tracer(args.cov) as tracer:
+            run_module(args.module, run_name='__main__', alter_sys=True)
+    except SystemExit:
+        pass
     sys.argv = argv
 
     highlighter = TraceHighlighter(tracer.events)
