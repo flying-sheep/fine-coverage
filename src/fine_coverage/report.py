@@ -3,11 +3,11 @@ from __future__ import annotations
 from collections.abc import Callable, Collection, Generator, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TypeVar
+from typing import NamedTuple, TypeVar
 
 from rich.text import Text
 
-from .ast import Pos, Span, parse
+from .ast import Span, parse
 from .tracer import CodeLocs
 
 T = TypeVar('T')
@@ -31,6 +31,11 @@ def intersperse(
         prev = next_
 
 
+class LineSpan(NamedTuple):
+    start: int
+    end: int
+
+
 @dataclass
 class TraceHighlighter:
     events: Collection[CodeLocs]
@@ -46,26 +51,28 @@ class TraceHighlighter:
         for l, line in enumerate(lines, 1):
             spans = sorted(
                 [
-                    span
+                    LineSpan(
+                        0 if span.start.line < l else span.start.col,
+                        len(line) if span.end.line > l else span.end.col,
+                    )
                     for span in self.spans[file_path]
                     if span.start.line <= l and span.end.line >= l
-                ],
-                key=lambda span: span.start,
+                ]
             )
             span_styles = intersperse(
                 [(span, 'green' if self.covered(file_path, span) else 'red') for span in spans],
                 lambda prev, next_: (
-                    Span(
-                        Pos(l, 0 if prev is None else prev[0].end.col),
-                        Pos(l, len(line) if next_ is None else next_[0].start.col),
+                    LineSpan(
+                        0 if prev is None else prev[0].end,
+                        len(line) if next_ is None else next_[0].start,
                     ),
                     None,
                 ),
             )
             for span, style in span_styles:
-                start = 0 if span.start.line < l else span.start.col
-                end = len(line) if span.end.line > l else span.end.col
-                text.append(line[start:end].decode('utf-8'), style)
+                if span.start == span.end:
+                    continue
+                text.append(line[span.start : span.end].decode('utf-8'), style)
             text.append('\n')
         return text
 
