@@ -21,7 +21,7 @@ classifiers = [
 ]
 dependencies = [
   'rich',
-  'rich-argparse',
+  'rich-argparse>=0.6.0',
 ]
 dynamic = ['version']
 
@@ -37,7 +37,11 @@ Source = 'https://github.com/flying-sheep/fine-coverage'
 path = 'src/fine_coverage/__about__.py'
 
 [tool.hatch.envs.default]
-dependencies = ['pytest', 'build', 'pyright']
+dependencies = [
+  'pytest',
+  'build',
+  'pyright',
+]
 [tool.hatch.envs.default.scripts]
 test = 'pytest {args}'
 typecheck = 'pyright {args}'
@@ -72,4 +76,4 @@ ignore = [
 ]
 src = ['src', 'tests']
 [tool.ruff.per-file-ignores]
-"src/fine_coverage/tracer.py" = ['E999']  # https://github.com/charliermarsh/ruff/issues/282
+'src/fine_coverage/tracer.py' = ['E999']  # https://github.com/charliermarsh/ruff/issues/282
