@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from typing import Callable, ClassVar
+
 from rich.style import StyleType
 
 class RichHelpFormatter(argparse.HelpFormatter):
