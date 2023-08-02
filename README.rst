@@ -1,18 +1,14 @@
 fine-coverage
 =============
 
-.. image:: https://img.shields.io/pypi/v/fine-coverage.svg
-   :href: https://pypi.org/project/fine-coverage
-   :alt: PyPI - Version
+..
 
-.. image:: https://img.shields.io/pypi/pyversions/fine-coverage.svg
-   :href: https://pypi.org/project/fine-coverage
-   :alt: PyPI - Python Version
+    TODO: add to PyPI?
+
+    |PyPI Version| |PyPI Python Version|
 
 A simple experiment to trace coverage at a granularity finer than lines,
 using Python 3.11’s new debug ranges information (`PEP 657`_).
-
-.. _PEP 657: https://peps.python.org/pep-0657/
 
 Table of Contents
 -----------------
@@ -24,8 +20,8 @@ Table of Contents
 Usage
 -----
 
-After installation, use `fine-coverage` or `python -m fine_coverage`.
-It accepts the `--cov` CLI option telling it what Python module to track coverage for,
+After installation, use ``fine-coverage`` or ``python -m fine_coverage``.
+It accepts the ``--cov`` CLI option telling it what Python module to track coverage for,
 as well as a module name to run and its options:
 
 .. code:: console
@@ -54,6 +50,12 @@ Installation
 License
 -------
 
-`fine-coverage` is distributed under the terms of the GPL_ license.
+``fine-coverage`` is distributed under the terms of the GPL_ license.
 
+
+.. |PyPI Version| image:: https://img.shields.io/pypi/v/fine-coverage.svg
+   :target: https://pypi.org/project/fine-coverage
+.. |PyPI Python Version| image:: https://img.shields.io/pypi/pyversions/fine-coverage.svg
+   :target: https://pypi.org/project/fine-coverage
+.. _PEP 657: https://peps.python.org/pep-0657/
 .. _GPL: https://spdx.org/licenses/GPL.html
