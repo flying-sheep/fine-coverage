@@ -14,8 +14,7 @@ Event = Literal['call', 'line', 'return', 'exception', 'opcode']
 
 
 class TraceFunction(Protocol):
-    def __call__(self, frame: FrameType, event: Event, arg: Any) -> Self | None:
-        ...
+    def __call__(self, frame: FrameType, event: Event, arg: Any) -> Self | None: ...
 
 
 class CodeLocs(NamedTuple):
