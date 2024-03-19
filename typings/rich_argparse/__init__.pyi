@@ -23,12 +23,16 @@ class RawTextRichHelpFormatter(RawDescriptionRichHelpFormatter):
 
     ...
 
-class ArgumentDefaultsRichHelpFormatter(argparse.ArgumentDefaultsHelpFormatter, RichHelpFormatter):
+class ArgumentDefaultsRichHelpFormatter(
+    argparse.ArgumentDefaultsHelpFormatter, RichHelpFormatter
+):
     """Rich help message formatter which adds default values to argument help."""
 
     ...
 
-class MetavarTypeRichHelpFormatter(argparse.MetavarTypeHelpFormatter, RichHelpFormatter):
+class MetavarTypeRichHelpFormatter(
+    argparse.MetavarTypeHelpFormatter, RichHelpFormatter
+):
     """Rich help message formatter which uses the argument 'type' as the default
     metavar value (instead of the argument 'dest').
     """
