@@ -1,75 +1,30 @@
 [build-system]
-requires = ['hatchling']
-build-backend = 'hatchling.build'
+requires = ['maturin>=0.14,<0.15']
+build-backend = 'maturin'
 
 [project]
 name = 'fine-coverage'
-description = 'x'
+description = 'Calculate and report region based code coverage.'
 readme = 'README.rst'
 requires-python = '>=3.11'
-license = 'GPL-3.0'
+license = { file = 'LICENSE.rst' }  # 'GPL-3.0'
 keywords = []
 authors = [
   { name = 'Philipp A.', email = 'flying-sheep@web.de' },
 ]
+urls.Documentation = 'https://github.com/flying-sheep/fine-coverage#readme'
+urls.Issues = 'https://github.com/flying-sheep/fine-coverage/issues'
+urls.Source = 'https://github.com/flying-sheep/fine-coverage'
 classifiers = [
   'Development Status :: 4 - Beta',
   'Programming Language :: Python',
   'Programming Language :: Python :: 3.11',
+  'Programming Language :: Rust',
   'Programming Language :: Python :: Implementation :: CPython',
   'Programming Language :: Python :: Implementation :: PyPy',
 ]
-dependencies = [
-  'rich',
-  'rich-argparse',
-]
+dependencies = []
 dynamic = ['version']
 
 [project.scripts]
-fine-coverage = 'fine_coverage.cli:run'
-
-[project.urls]
-Documentation = 'https://github.com/flying-sheep/fine-coverage#readme'
-Issues = 'https://github.com/flying-sheep/fine-coverage/issues'
-Source = 'https://github.com/flying-sheep/fine-coverage'
-
-[tool.hatch.version]
-path = 'src/fine_coverage/__about__.py'
-
-[tool.hatch.envs.default]
-dependencies = ['pytest', 'build', 'pyright']
-[tool.hatch.envs.default.scripts]
-test = 'pytest {args}'
-typecheck = 'pyright {args}'
-build = 'python -m build {args}'
-[[tool.hatch.envs.default.matrix]]
-python = ['3.11']
-
-[tool.pytest.ini_options]
-addopts = ['--import-mode=importlib']
-
-[tool.pyright]
-include = ['src']
-
-[tool.black]
-line-length = 100
-skip-string-normalization = true
-
-[tool.ruff]
-line-length = 100
-select = [
-    # Pyflakes
-    'F',
-    # Pycodestyle
-    'E',
-    'W',
-    # isort
-    'I001'
-]
-ignore = [
-  # Ambiguous variable/class/… name
-  'E74',
-]
-src = ['src', 'tests']
-[tool.ruff.per-file-ignores]
-"src/fine_coverage/tracer.py" = ['E999']  # https://github.com/charliermarsh/ruff/issues/282
+fine-coverage = 'fine_coverage:cli'
