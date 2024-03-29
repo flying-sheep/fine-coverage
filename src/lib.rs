@@ -1,6 +1,7 @@
 mod tracer;
 
-use pyo3::{prelude::*, exceptions::PySystemExit};
+use pyo3::prelude::*;
+use pyo3::exceptions::PySystemExit;
 
 use clap::Parser;
 
@@ -20,6 +21,20 @@ struct Args {
     cov: Option<String>,
 }
 
+#[pyclass]
+struct Tracer;
+
+impl tracer::Tracer<tracer::TraceEvent> for Tracer {
+    fn trace(
+            &mut self,
+            frame: PyObject,
+            arg: Option<PyObject>,
+            event: tracer::TraceEvent,
+            py: Python,
+        ) -> PyResult<()> {
+        Ok(())
+    }
+}
 
 /// Runs the command line interface.
 #[pyfunction]
@@ -32,7 +47,7 @@ fn cli() -> PyResult<()> {
 
 /// Calculate and report region based code coverage.
 #[pymodule]
-fn fine_coverage(_py: Python, m: &PyModule) -> PyResult<()> {
+fn fine_coverage(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(cli, m)?)?;
     Ok(())
 }
