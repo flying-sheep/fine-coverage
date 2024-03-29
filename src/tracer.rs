@@ -103,7 +103,7 @@ where
     // Safety:
     //
     // `frame` is an `ffi::PyFrameObject` which can be converted safely to a `PyObject`.
-    let frame = frame as *mut ffi::PyObject;
+    let frame: *mut ffi::PyObject = frame.cast();
     Python::with_gil(|py| {
         // Safety:
         //
