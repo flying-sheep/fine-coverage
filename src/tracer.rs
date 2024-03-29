@@ -1,12 +1,15 @@
 use std::ffi::c_int;
+use std::fmt::Debug;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::ffi;
 use pyo3::prelude::*;
 use pyo3::pyclass::boolean_struct::False;
+use pyo3::types::PyFrame;
 use pyo3::PyClass;
 
 /// Wrap pyo3-ffi/src/cpython/pystate.rs#L18-L25
+#[derive(Debug)]
 pub enum TraceEvent {
     Call,
     Exception {
@@ -19,6 +22,7 @@ pub enum TraceEvent {
     Opcode,
 }
 
+#[derive(Debug)]
 pub enum ProfileEvent {
     TraceEvent(TraceEvent),
     CCall,
@@ -32,7 +36,7 @@ impl From<TraceEvent> for ProfileEvent {
     }
 }
 
-pub trait Event: Sized {
+pub trait Event: Sized + Debug {
     fn from_raw<'py>(what: c_int, arg: Option<Bound<'py, PyAny>>) -> PyResult<Self>;
 }
 
@@ -92,60 +96,53 @@ macro_rules! try_py {
     };
 }
 
-extern "C" fn trace_func<E, P>(
-    _obj: *mut ffi::PyObject,
-    _frame: *mut ffi::PyFrameObject,
+extern "C" fn trace_func<E, T>(
+    obj: *mut ffi::PyObject,
+    frame: *mut ffi::PyFrameObject,
     what: c_int,
-    _arg: *mut ffi::PyObject,
+    arg: *mut ffi::PyObject,
 ) -> c_int
 where
-    P: Tracer<E>,
     E: Event,
+    T: Tracer<E>,
 {
-    let _frame = _frame as *mut ffi::PyObject;
+    // Safety:
+    //
+    // `frame` is an `ffi::PyFrameObject` which can be converted safely to a `PyObject`.
+    let frame = frame as *mut ffi::PyObject;
     Python::with_gil(|py| {
         // Safety:
         //
-        // `from_borrowed_ptr_or_err` must be called in an unsafe block.
-        //
-        // `_obj` is a reference to our `Profiler` wrapped up in a Python object, so
+        // `obj` is a reference to our `Profiler` wrapped up in a Python object, so
         // we can safely convert it from an `ffi::PyObject` to a `PyObject`.
         //
         // We borrow the object so we don't break reference counting.
         //
         // https://docs.rs/pyo3/latest/pyo3/struct.Py.html#method.from_borrowed_ptr_or_err
         // https://docs.python.org/3/c-api/init.html#c.Py_tracefunc
-        let obj = try_py!(py, unsafe { PyObject::from_borrowed_ptr_or_err(py, _obj) });
-        let mut tracer = try_py!(py, obj.extract::<PyRefMut<P>>(py));
+        let obj = try_py!(py, unsafe { PyObject::from_borrowed_ptr_or_err(py, obj) });
+        let mut tracer = try_py!(py, obj.extract::<PyRefMut<T>>(py));
 
         // Safety:
-        //
-        // `from_borrowed_ptr_or_err` must be called in an unsafe block.
-        //
-        // `_frame` is an `ffi::PyFrameObject` which can be converted safely
-        // to a `PyObject`. We can later convert it into a `pyo3::types::PyFrame`.
         //
         // We borrow the object so we don't break reference counting.
         //
         // https://docs.rs/pyo3/latest/pyo3/struct.Py.html#method.from_borrowed_ptr_or_err
         // https://docs.python.org/3/c-api/init.html#c.Py_tracefunc
-        let frame = try_py!(py, unsafe {
-            PyObject::from_borrowed_ptr_or_err(py, _frame)
-        });
+        let frame = try_py!(py, unsafe { PyObject::from_borrowed_ptr_or_err(py, frame) });
+        let frame = try_py!(py, frame.extract(py));
 
         // Safety:
         //
-        // `from_borrowed_ptr_or_opt` must be called in an unsafe block.
-        //
-        // `_arg` is either a `Py_None` (PyTrace_CALL) or any PyObject (PyTrace_RETURN) or
+        // `arg` is either a `Py_None` (PyTrace_CALL) or any PyObject (PyTrace_RETURN) or
         // NULL (PyTrace_RETURN).
         //
         // We borrow the object so we don't break reference counting.
         //
         // https://docs.rs/pyo3/latest/pyo3/struct.Py.html#method.from_borrowed_ptr_or_opt
         // https://docs.python.org/3/c-api/init.html#c.Py_tracefunc
-        let arg = unsafe { PyObject::from_borrowed_ptr_or_opt(py, _arg) };
-        // `_arg` is `NULL` when the frame exits with an exception unwinding instead of a normal return.
+        let arg = unsafe { PyObject::from_borrowed_ptr_or_opt(py, arg) };
+        // `arg` is `NULL` when the frame exits with an exception unwinding instead of a normal return.
         // So it might be possible to make `arg` a `PyResult` here instead of an option, but I haven't worked out the detail of how that would work.
 
         let event = try_py!(py, E::from_raw(what, arg.map(|arg| arg.into_bound(py))));
@@ -159,7 +156,7 @@ pub trait Tracer<E>: PyClass<Frozen = False>
 where
     E: Event,
 {
-    fn trace(&mut self, frame: PyObject, event: E, py: Python) -> PyResult<()>;
+    fn trace(&mut self, frame: Py<PyFrame>, event: E, py: Python) -> PyResult<()>;
 }
 
 pub trait Register<E: Event> {
@@ -167,14 +164,14 @@ pub trait Register<E: Event> {
     fn deregister(self) -> PyResult<()>;
 }
 
-impl<'a, P> Register<ProfileEvent> for Bound<'a, P>
+impl<'a, T> Register<ProfileEvent> for Bound<'a, T>
 where
-    P: Tracer<ProfileEvent>,
+    T: Tracer<ProfileEvent>,
 {
     fn register(self) -> PyResult<()> {
         let py = self.py();
         unsafe {
-            ffi::PyEval_SetProfile(Some(trace_func::<ProfileEvent, P>), self.into_ptr());
+            ffi::PyEval_SetProfile(Some(trace_func::<ProfileEvent, T>), self.into_ptr());
         }
         match PyErr::take(py) {
             None => Ok(()),
@@ -189,14 +186,14 @@ where
     }
 }
 
-impl<'py, P> Register<TraceEvent> for Bound<'py, P>
+impl<'py, T> Register<TraceEvent> for Bound<'py, T>
 where
-    P: Tracer<TraceEvent>,
+    T: Tracer<TraceEvent>,
 {
     fn register(self) -> PyResult<()> {
         let py = self.py();
         unsafe {
-            ffi::PyEval_SetTrace(Some(trace_func::<TraceEvent, P>), self.into_ptr());
+            ffi::PyEval_SetTrace(Some(trace_func::<TraceEvent, T>), self.into_ptr());
         }
         match PyErr::take(py) {
             None => Ok(()),

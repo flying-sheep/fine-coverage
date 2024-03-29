@@ -4,6 +4,9 @@ use pyo3::exceptions::PySystemExit;
 use pyo3::prelude::*;
 
 use clap::Parser;
+use pyo3::types::PyFrame;
+
+use crate::tracer::Register;
 
 /// Program to calculate and report region based code coverage.
 #[derive(Parser, Debug)]
@@ -25,7 +28,13 @@ struct Args {
 struct Tracer;
 
 impl tracer::Tracer<tracer::TraceEvent> for Tracer {
-    fn trace(&mut self, frame: PyObject, event: tracer::TraceEvent, py: Python) -> PyResult<()> {
+    fn trace(
+        &mut self,
+        frame: Py<PyFrame>,
+        event: tracer::TraceEvent,
+        _py: Python,
+    ) -> PyResult<()> {
+        dbg!(frame, event);
         Ok(())
     }
 }
@@ -35,6 +44,9 @@ impl tracer::Tracer<tracer::TraceEvent> for Tracer {
 fn cli() -> PyResult<()> {
     // TODO: color
     let args = Args::try_parse().map_err(|e| PySystemExit::new_err(e.to_string()))?;
+    let tracer = Tracer {};
+    Python::with_gil(|py| Bound::new(py, tracer)?.register())?;
+    // TODO: run module
     args.module;
     Ok(())
 }
