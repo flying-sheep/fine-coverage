@@ -60,13 +60,24 @@ pub trait Event: TryFrom<c_int, Error = ()> {}
 impl Event for TraceEvent {}
 impl Event for ProfileEvent {}
 
+macro_rules! try_py {
+    ($py:ident, $($arg:tt)*) => {
+        match $($arg)* {
+            Ok(val) => val,
+            Err(err) => {
+                err.restore($py);
+                return -1;
+            }
+        }
+    };
+}
+
 extern "C" fn trace_func<E, P>(
     _obj: *mut ffi::PyObject,
     _frame: *mut ffi::PyFrameObject,
     what: c_int,
     _arg: *mut ffi::PyObject,
 ) -> c_int where P: Tracer<E>, E: Event {
-    let event = E::try_from(what).expect("invalid `what`");
     let _frame = _frame as *mut ffi::PyObject;
     Python::with_gil(|py| {
         // Safety:
@@ -80,20 +91,8 @@ extern "C" fn trace_func<E, P>(
         //
         // https://docs.rs/pyo3/latest/pyo3/struct.Py.html#method.from_borrowed_ptr_or_err
         // https://docs.python.org/3/c-api/init.html#c.Py_tracefunc
-        let obj = match unsafe { PyObject::from_borrowed_ptr_or_err(py, _obj) } {
-            Ok(obj) => obj,
-            Err(err) => {
-                err.restore(py);
-                return -1;
-            }
-        };
-        let mut tracer = match obj.extract::<PyRefMut<P>>(py) {
-            Ok(profiler) => profiler,
-            Err(err) => {
-                err.restore(py);
-                return -1;
-            }
-        };
+        let obj = try_py!(py, unsafe { PyObject::from_borrowed_ptr_or_err(py, _obj) });
+        let mut tracer = try_py!(py, obj.extract::<PyRefMut<P>>(py));
 
         // Safety:
         //
@@ -106,13 +105,7 @@ extern "C" fn trace_func<E, P>(
         //
         // https://docs.rs/pyo3/latest/pyo3/struct.Py.html#method.from_borrowed_ptr_or_err
         // https://docs.python.org/3/c-api/init.html#c.Py_tracefunc
-        let frame = match unsafe { PyObject::from_borrowed_ptr_or_err(py, _frame) } {
-            Ok(frame) => frame,
-            Err(err) => {
-                err.restore(py);
-                return -1;
-            }
-        };
+        let frame = try_py!(py, unsafe { PyObject::from_borrowed_ptr_or_err(py, _frame) });
 
         // Safety:
         //
@@ -129,13 +122,10 @@ extern "C" fn trace_func<E, P>(
         // `_arg` is `NULL` when the frame exits with an exception unwinding instead of a normal return.
         // So it might be possible to make `arg` a `PyResult` here instead of an option, but I haven't worked out the detail of how that would work.
 
-        match tracer.trace(frame, arg, event, py) {
-            Ok(_) => 0,
-            Err(err) => {
-                err.restore(py);
-                return -1;
-            }
-        }
+        let event = E::try_from(what).expect("invalid `what`");
+
+        try_py!(py, tracer.trace(frame, arg, event, py));
+        0
     })
 }
 
