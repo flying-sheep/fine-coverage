@@ -24,16 +24,11 @@ pub enum TraceEvent {
 
 #[derive(Debug)]
 pub enum ProfileEvent {
-    TraceEvent(TraceEvent),
+    Call,
+    Return(Option<PyObject>), // TODO: PyResult instead?
     CCall,
-    CException,
-    CReturn,
-}
-
-impl From<TraceEvent> for ProfileEvent {
-    fn from(event: TraceEvent) -> Self {
-        Self::TraceEvent(event)
-    }
+    CException, // TODO
+    CReturn,    // TODO
 }
 
 pub trait Event: Sized + Debug {
@@ -68,10 +63,9 @@ impl Event for TraceEvent {
 
 impl Event for ProfileEvent {
     fn from_raw<'py>(what: c_int, arg: Option<Bound<'py, PyAny>>) -> PyResult<Self> {
-        if let Ok(event) = TraceEvent::from_raw(what, arg.clone()) {
-            return Ok(Self::from(event));
-        }
         Ok(match (what, arg) {
+            (ffi::PyTrace_CALL, _) => Self::Call,
+            (ffi::PyTrace_RETURN, value) => Self::Return(value.map(Bound::unbind)),
             (ffi::PyTrace_C_CALL, _) => Self::CCall,
             (ffi::PyTrace_C_EXCEPTION, _) => Self::CException,
             (ffi::PyTrace_C_RETURN, _) => Self::CReturn,
