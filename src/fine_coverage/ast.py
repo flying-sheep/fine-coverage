@@ -21,13 +21,13 @@ class Span(NamedTuple):
     def from_tuple(cls, span: tuple[int, int, int, int]) -> Self:
         assert span[0] is not None
         assert span[2] is not None
-        return Span(Pos(span[0], span[2]), Pos(span[1], span[3]))
+        return cls(Pos(span[0], span[2]), Pos(span[1], span[3]))
 
     @classmethod
     def from_ast(cls, node: ast.AST) -> Self:
         assert node.lineno is not None
         assert node.col_offset is not None
-        return Span(
+        return cls(
             Pos(node.lineno, node.col_offset),
             Pos(
                 node.lineno if node.end_lineno is None else node.end_lineno,
@@ -35,13 +35,13 @@ class Span(NamedTuple):
             ),
         )
 
-    def __lt__(self, other: Span) -> bool:
-        if self == other:
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, Span) or self == other:
             return False
         return self.start >= other.start and self.end <= other.end
 
-    def __gt__(self, other: Span) -> bool:
-        if self == other:
+    def __gt__(self, other: object) -> bool:
+        if not isinstance(other, Span) or self == other:
             return False
         return self.start <= other.start and self.end >= other.end
 
