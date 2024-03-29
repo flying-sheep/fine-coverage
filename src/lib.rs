@@ -30,7 +30,8 @@ struct Args {
 #[pyfunction]
 fn cli() -> PyResult<()> {
     // TODO: color
-    let args = Args::try_parse().map_err(|e| PySystemExit::new_err(e.to_string()))?;
+    let args = Args::try_parse_from(std::env::args_os().skip(1))
+        .map_err(|e| PySystemExit::new_err(e.to_string()))?;
     let collector = collector::Collector::default();
     Python::with_gil(|py| {
         Bound::new(py, collector)?.register()?;

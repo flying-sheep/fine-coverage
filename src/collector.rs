@@ -26,7 +26,8 @@ impl Tracer<TraceEvent> for Collector {
                 );
             }
             TraceEvent::Return(value) => {
-                dbg!("return", frame, value.map(|value| value.into_bound(py)));
+                let value = value.map(|value| value.into_bound(py));
+                dbg!("return", frame, value);
             }
             _ => {
                 dbg!(event, frame);
