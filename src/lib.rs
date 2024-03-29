@@ -28,13 +28,28 @@ struct Args {
 struct Tracer;
 
 impl tracer::Tracer<tracer::TraceEvent> for Tracer {
-    fn trace(
-        &mut self,
-        frame: Py<PyFrame>,
-        event: tracer::TraceEvent,
-        _py: Python,
-    ) -> PyResult<()> {
-        dbg!(frame, event);
+    fn trace(&mut self, frame: Py<PyFrame>, event: tracer::TraceEvent, py: Python) -> PyResult<()> {
+        let frame = frame.into_bound(py);
+        match event {
+            tracer::TraceEvent::Exception {
+                exc_type,
+                exc_value,
+                exc_traceback,
+            } => {
+                dbg!(
+                    frame,
+                    exc_type.into_bound(py),
+                    exc_value.into_bound(py),
+                    exc_traceback.into_bound(py)
+                );
+            }
+            tracer::TraceEvent::Return(value) => {
+                dbg!(frame, value.map(|value| value.into_bound(py)));
+            }
+            _ => {
+                dbg!(frame, event);
+            }
+        }
         Ok(())
     }
 }
