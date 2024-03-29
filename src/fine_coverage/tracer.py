@@ -1,21 +1,20 @@
 from __future__ import annotations
-import sys
+
 import inspect
 import linecache
-from dataclasses import dataclass, field, KW_ONLY
-from collections.abc import Iterable, Collection, Generator
+import sys
+from collections.abc import Collection, Generator, Iterable
+from dataclasses import KW_ONLY, dataclass, field
 from types import FrameType
-from typing import cast, Any, Literal, Self, Protocol, NamedTuple
+from typing import Any, Literal, NamedTuple, Protocol, Self, cast
 
-from .ast import parse, Span
-
+from .ast import Span
 
 Event = Literal['call', 'line', 'return', 'exception', 'opcode']
 
 
 class TraceFunction(Protocol):
-    def __call__(self, frame: FrameType, event: Event, arg: Any) -> Self | None:
-        ...
+    def __call__(self, frame: FrameType, event: Event, arg: Any) -> Self | None: ...
 
 
 class CodeLocs(NamedTuple):
