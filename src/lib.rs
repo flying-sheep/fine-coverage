@@ -37,6 +37,7 @@ impl tracer::Tracer<tracer::TraceEvent> for Tracer {
                 exc_traceback,
             } => {
                 dbg!(
+                    "exception",
                     frame,
                     exc_type.into_bound(py),
                     exc_value.into_bound(py),
@@ -44,10 +45,10 @@ impl tracer::Tracer<tracer::TraceEvent> for Tracer {
                 );
             }
             tracer::TraceEvent::Return(value) => {
-                dbg!(frame, value.map(|value| value.into_bound(py)));
+                dbg!("return", frame, value.map(|value| value.into_bound(py)));
             }
             _ => {
-                dbg!(frame, event);
+                dbg!(event, frame);
             }
         }
         Ok(())
