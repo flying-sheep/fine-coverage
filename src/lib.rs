@@ -1,7 +1,7 @@
 mod tracer;
 
-use pyo3::prelude::*;
 use pyo3::exceptions::PySystemExit;
+use pyo3::prelude::*;
 
 use clap::Parser;
 
@@ -25,13 +25,7 @@ struct Args {
 struct Tracer;
 
 impl tracer::Tracer<tracer::TraceEvent> for Tracer {
-    fn trace(
-            &mut self,
-            frame: PyObject,
-            arg: Option<PyObject>,
-            event: tracer::TraceEvent,
-            py: Python,
-        ) -> PyResult<()> {
+    fn trace(&mut self, frame: PyObject, event: tracer::TraceEvent, py: Python) -> PyResult<()> {
         Ok(())
     }
 }

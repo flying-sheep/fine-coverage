@@ -1,31 +1,22 @@
 use std::ffi::c_int;
 
-use pyo3::prelude::*;
+use pyo3::exceptions::PyValueError;
 use pyo3::ffi;
-use pyo3::PyClass;
+use pyo3::prelude::*;
 use pyo3::pyclass::boolean_struct::False;
+use pyo3::PyClass;
 
 /// Wrap pyo3-ffi/src/cpython/pystate.rs#L18-L25
 pub enum TraceEvent {
     Call,
-    Exception,
+    Exception {
+        exc_type: PyObject,
+        exc_value: PyObject,
+        exc_traceback: PyObject,
+    },
     Line,
-    Return,
+    Return(Option<PyObject>), // TODO: PyResult instead?
     Opcode,
-}
-
-impl TryFrom<c_int> for TraceEvent {
-    type Error = ();
-    fn try_from(what: c_int) -> Result<Self, Self::Error> {
-        Ok(match what {
-            ffi::PyTrace_CALL => Self::Call,
-            ffi::PyTrace_EXCEPTION => Self::Exception,
-            ffi::PyTrace_LINE => Self::Line,
-            ffi::PyTrace_RETURN => Self::Return,
-            ffi::PyTrace_OPCODE => Self::Opcode,
-            _ => return Err(()),
-        })
-    }
 }
 
 pub enum ProfileEvent {
@@ -41,24 +32,53 @@ impl From<TraceEvent> for ProfileEvent {
     }
 }
 
-impl TryFrom<c_int> for ProfileEvent {
-    type Error = ();
-    fn try_from(what: c_int) -> Result<Self, Self::Error> {
-        if let Ok(event) = TraceEvent::try_from(what) {
-            return Ok(Self::from(event));
-        }
-        Ok(match what {
-            ffi::PyTrace_C_CALL => Self::CCall,
-            ffi::PyTrace_C_EXCEPTION => Self::CException,
-            ffi::PyTrace_C_RETURN => Self::CReturn,
-            _ => return Err(()),
+pub trait Event: Sized {
+    fn from_raw<'py>(what: c_int, arg: Option<Bound<'py, PyAny>>) -> PyResult<Self>;
+}
+
+impl Event for TraceEvent {
+    fn from_raw<'py>(what: c_int, arg: Option<Bound<'py, PyAny>>) -> PyResult<Self> {
+        Ok(match (what, arg) {
+            (ffi::PyTrace_CALL, _) => Self::Call,
+            (ffi::PyTrace_EXCEPTION, value) => {
+                let (exc_type, exc_value, exc_traceback) = value
+                    .ok_or_else(|| PyValueError::new_err("PyTrace_EXCEPTION without exc_info"))?
+                    .extract::<(PyObject, PyObject, PyObject)>()?;
+                Self::Exception {
+                    exc_type,
+                    exc_value,
+                    exc_traceback,
+                }
+            }
+            (ffi::PyTrace_LINE, _) => Self::Line,
+            (ffi::PyTrace_RETURN, value) => Self::Return(value.map(Bound::unbind)),
+            (ffi::PyTrace_OPCODE, _) => Self::Opcode,
+            (what, _) => {
+                return Err(PyValueError::new_err(format!(
+                    "invalid trace event type {what}"
+                )))
+            }
         })
     }
 }
 
-pub trait Event: TryFrom<c_int, Error = ()> {}
-impl Event for TraceEvent {}
-impl Event for ProfileEvent {}
+impl Event for ProfileEvent {
+    fn from_raw<'py>(what: c_int, arg: Option<Bound<'py, PyAny>>) -> PyResult<Self> {
+        if let Ok(event) = TraceEvent::from_raw(what, arg.clone()) {
+            return Ok(Self::from(event));
+        }
+        Ok(match (what, arg) {
+            (ffi::PyTrace_C_CALL, _) => Self::CCall,
+            (ffi::PyTrace_C_EXCEPTION, _) => Self::CException,
+            (ffi::PyTrace_C_RETURN, _) => Self::CReturn,
+            (what, _) => {
+                return Err(PyValueError::new_err(format!(
+                    "invalid profile event type {what}"
+                )))
+            }
+        })
+    }
+}
 
 macro_rules! try_py {
     ($py:ident, $($arg:tt)*) => {
@@ -77,7 +97,11 @@ extern "C" fn trace_func<E, P>(
     _frame: *mut ffi::PyFrameObject,
     what: c_int,
     _arg: *mut ffi::PyObject,
-) -> c_int where P: Tracer<E>, E: Event {
+) -> c_int
+where
+    P: Tracer<E>,
+    E: Event,
+{
     let _frame = _frame as *mut ffi::PyObject;
     Python::with_gil(|py| {
         // Safety:
@@ -105,7 +129,9 @@ extern "C" fn trace_func<E, P>(
         //
         // https://docs.rs/pyo3/latest/pyo3/struct.Py.html#method.from_borrowed_ptr_or_err
         // https://docs.python.org/3/c-api/init.html#c.Py_tracefunc
-        let frame = try_py!(py, unsafe { PyObject::from_borrowed_ptr_or_err(py, _frame) });
+        let frame = try_py!(py, unsafe {
+            PyObject::from_borrowed_ptr_or_err(py, _frame)
+        });
 
         // Safety:
         //
@@ -122,21 +148,18 @@ extern "C" fn trace_func<E, P>(
         // `_arg` is `NULL` when the frame exits with an exception unwinding instead of a normal return.
         // So it might be possible to make `arg` a `PyResult` here instead of an option, but I haven't worked out the detail of how that would work.
 
-        let event = E::try_from(what).expect("invalid `what`");
+        let event = try_py!(py, E::from_raw(what, arg.map(|arg| arg.into_bound(py))));
 
-        try_py!(py, tracer.trace(frame, arg, event, py));
+        try_py!(py, tracer.trace(frame, event, py));
         0
     })
 }
 
-pub trait Tracer<E>: PyClass<Frozen = False> where E: Event {
-    fn trace(
-        &mut self,
-        frame: PyObject,
-        arg: Option<PyObject>,
-        event: E,
-        py: Python,
-    ) -> PyResult<()>;
+pub trait Tracer<E>: PyClass<Frozen = False>
+where
+    E: Event,
+{
+    fn trace(&mut self, frame: PyObject, event: E, py: Python) -> PyResult<()>;
 }
 
 pub trait Register<E: Event> {
@@ -144,7 +167,10 @@ pub trait Register<E: Event> {
     fn deregister(self) -> PyResult<()>;
 }
 
-impl<'a, P> Register<ProfileEvent> for Bound<'a, P> where P: Tracer<ProfileEvent> {
+impl<'a, P> Register<ProfileEvent> for Bound<'a, P>
+where
+    P: Tracer<ProfileEvent>,
+{
     fn register(self) -> PyResult<()> {
         let py = self.py();
         unsafe {
@@ -163,7 +189,10 @@ impl<'a, P> Register<ProfileEvent> for Bound<'a, P> where P: Tracer<ProfileEvent
     }
 }
 
-impl<'a, P> Register<TraceEvent> for Bound<'a, P> where P: Tracer<TraceEvent> {
+impl<'py, P> Register<TraceEvent> for Bound<'py, P>
+where
+    P: Tracer<TraceEvent>,
+{
     fn register(self) -> PyResult<()> {
         let py = self.py();
         unsafe {
