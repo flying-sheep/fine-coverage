@@ -1,3 +1,5 @@
+mod tracer;
+
 use pyo3::{prelude::*, exceptions::PySystemExit};
 
 use clap::Parser;
