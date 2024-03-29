@@ -32,11 +32,11 @@ pub enum ProfileEvent {
 }
 
 pub trait Event: Sized + Debug {
-    fn from_raw<'py>(what: c_int, arg: Option<Bound<'py, PyAny>>) -> PyResult<Self>;
+    fn from_raw(what: c_int, arg: Option<Bound<'_, PyAny>>) -> PyResult<Self>;
 }
 
 impl Event for TraceEvent {
-    fn from_raw<'py>(what: c_int, arg: Option<Bound<'py, PyAny>>) -> PyResult<Self> {
+    fn from_raw(what: c_int, arg: Option<Bound<'_, PyAny>>) -> PyResult<Self> {
         Ok(match (what, arg) {
             (ffi::PyTrace_CALL, _) => Self::Call,
             (ffi::PyTrace_EXCEPTION, value) => {
@@ -62,7 +62,7 @@ impl Event for TraceEvent {
 }
 
 impl Event for ProfileEvent {
-    fn from_raw<'py>(what: c_int, arg: Option<Bound<'py, PyAny>>) -> PyResult<Self> {
+    fn from_raw(what: c_int, arg: Option<Bound<'_, PyAny>>) -> PyResult<Self> {
         Ok(match (what, arg) {
             (ffi::PyTrace_CALL, _) => Self::Call,
             (ffi::PyTrace_RETURN, value) => Self::Return(value.map(Bound::unbind)),
