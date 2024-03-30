@@ -3,7 +3,6 @@
 mod collector;
 mod tracer;
 
-use clap::error::{ErrorFormatter, RichFormatter};
 use pyo3::exceptions::PySystemExit;
 use pyo3::prelude::*;
 
@@ -30,13 +29,12 @@ struct Args {
 /// Runs the command line interface.
 #[pyfunction]
 fn cli() -> PyResult<()> {
+    // TODO: get program name non-interpreter args
     let args = Args::try_parse_from(std::env::args_os().skip(1)).map_err(|e| {
+        use clap::error::ErrorKind::{DisplayHelp, DisplayVersion};
         e.print().unwrap_or_else(|e| eprintln!("{e}"));
         // return code 0 if we’re displaying help or version
-        PySystemExit::new_err(!matches!(
-            e.kind(),
-            clap::error::ErrorKind::DisplayHelp | clap::error::ErrorKind::DisplayVersion
-        ))
+        PySystemExit::new_err(!matches!(e.kind(), DisplayHelp | DisplayVersion))
     })?;
     let collector = collector::Collector::default();
     Python::with_gil(|py| {
