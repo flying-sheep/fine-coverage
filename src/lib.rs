@@ -29,7 +29,7 @@ struct Args {
 /// Runs the command line interface.
 #[pyfunction]
 fn cli() -> PyResult<()> {
-    // TODO: get program name non-interpreter args
+    // TODO: only parse non-interpreter args (e.g. this breaks when run via `python -m`)
     let args = Args::try_parse_from(std::env::args_os().skip(1)).map_err(|e| {
         use clap::error::ErrorKind::{DisplayHelp, DisplayVersion};
         e.print().unwrap_or_else(|e| eprintln!("{e}"));
@@ -41,11 +41,7 @@ fn cli() -> PyResult<()> {
         Bound::new(py, collector)?.register()?;
 
         let runpy = PyModule::import_bound(py, "runpy")?;
-        let run_fn = if args.module {
-            "run_module"
-        } else {
-            "run_path"
-        };
+        let run_fn = if args.module { "run_module" } else { "run_path" };
         runpy.getattr(run_fn)?.call((args.name,), None)?;
         PyResult::Ok(())
     })?;
