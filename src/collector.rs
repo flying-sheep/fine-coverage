@@ -54,11 +54,17 @@ impl Tracer<TraceEvent> for Collector {
         let code = frame.getattr("f_code")?;
         let positions = code.getattr("co_positions")?.call0()?;
         let filename = code.getattr("co_filename")?;
-        for pos in positions.iter()? {
-            let pos = pos?;
-            if let Ok((sl, el, sc, ec)) = pos.extract::<(u32, u32, u32, u32)>() {
-                dbg!((sl, el, sc, ec), &filename);
-            }
+        let filename = filename.extract::<&str>()?;
+        if filename.starts_with('<') {
+            // TODO: only collect own file instead
+            return Ok(());
+        }
+        for pos in positions
+            .iter()?
+            .filter_map(Result::ok)
+            .filter_map(|pos| pos.extract::<(u32, u32, u32, u32)>().ok())
+        {
+            dbg!(pos, &filename);
         }
         Ok(())
     }
