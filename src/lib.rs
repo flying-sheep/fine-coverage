@@ -24,6 +24,9 @@ struct Args {
     /// Module to calculate coverage for
     #[arg(short, long)]
     cov: Option<String>,
+
+    #[arg(trailing_var_arg(true))]
+    options: Vec<String>,
 }
 
 /// Runs the command line interface.

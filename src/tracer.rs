@@ -8,20 +8,26 @@ use pyo3::pyclass::boolean_struct::False;
 use pyo3::types::PyFrame;
 use pyo3::PyClass;
 
-/// Wrap pyo3-ffi/src/cpython/pystate.rs#L18-L25
+/// See <https://docs.python.org/3/c-api/init.html#c.PyEval_SetTrace>
 #[derive(Debug)]
 pub enum TraceEvent {
+    /// See <https://docs.python.org/3/c-api/init.html#c.PyTrace_CALL>
     Call,
+    /// See <https://docs.python.org/3/c-api/init.html#c.PyTrace_EXCEPTION>
     Exception {
         exc_type: PyObject,
         exc_value: PyObject,
         exc_traceback: PyObject,
     },
+    /// See <https://docs.python.org/3/c-api/init.html#c.PyTrace_LINE>
     Line,
+    /// See <https://docs.python.org/3/c-api/init.html#c.PyTrace_RETURN>
     Return(Option<PyObject>), // TODO: PyResult instead?
+    /// See <https://docs.python.org/3/c-api/init.html#c.PyTrace_OPCODE>
     Opcode,
 }
 
+/// See <https://docs.python.org/3/c-api/init.html#c.PyEval_SetProfile>
 #[derive(Debug)]
 pub enum ProfileEvent {
     Call,

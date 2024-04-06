@@ -10,4 +10,8 @@ crate-type = ['cdylib']
 
 [dependencies]
 clap = { version = '4.0.29', features = ['derive']}
+ouroboros = "0.18.3"
 pyo3 = { version = '0.21.0', features = ['extension-module'] }
+ruff_text_size = { git = "https://github.com/astral-sh/ruff", tag = "v0.3.5", version = "0.0.0" }
+ruff_python_ast = { git = "https://github.com/astral-sh/ruff", tag = "v0.3.5", version = "0.0.0" }
+ruff_python_parser = { git = "https://github.com/astral-sh/ruff", tag = "v0.3.5", version = "0.0.0" }
