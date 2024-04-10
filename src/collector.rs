@@ -21,7 +21,6 @@ impl Tracer<TraceEvent> for Collector {
             return Ok(());
         }
         let code = frame.getattr("f_code")?;
-        let positions = code.getattr("co_positions")?.call0()?;
         let filename = code.getattr("co_filename")?;
         let filename = filename.extract::<&str>()?;
         if filename.starts_with('<') {
@@ -30,7 +29,9 @@ impl Tracer<TraceEvent> for Collector {
         }
 
         let stats = self.stats.entry(filename.to_owned()).or_default();
-        for pos in positions
+        for pos in code
+            .getattr("co_positions")?
+            .call0()?
             .iter()?
             .filter_map(Result::ok)
             .filter_map(|pos| pos.extract::<(u32, u32, u32, u32)>().ok())
