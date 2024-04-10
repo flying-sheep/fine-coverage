@@ -1,6 +1,7 @@
 #![warn(clippy::pedantic)]
 
 mod collector;
+mod reporter;
 mod tracer;
 
 use pyo3::exceptions::PySystemExit;
