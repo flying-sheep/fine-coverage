@@ -4,10 +4,10 @@ mod collector;
 mod reporter;
 mod tracer;
 
+use clap::Parser;
 use pyo3::exceptions::PySystemExit;
 use pyo3::prelude::*;
-
-use clap::Parser;
+use pyo3::types::PyDict;
 
 use crate::tracer::Register;
 
@@ -43,12 +43,37 @@ fn cli() -> PyResult<()> {
     let collector = collector::Collector::default();
     Python::with_gil(|py| {
         Bound::new(py, collector)?.register()?;
-
-        let runpy = PyModule::import_bound(py, "runpy")?;
-        let run_fn = if args.module { "run_module" } else { "run_path" };
-        runpy.getattr(run_fn)?.call((args.name,), None)?;
+        runpy(args, py)?;
         PyResult::Ok(())
     })?;
+    Ok(())
+}
+
+fn runpy(args: Args, py: Python) -> PyResult<()> {
+    let sys = PyModule::import_bound(py, "sys")?;
+    let runpy = PyModule::import_bound(py, "runpy")?;
+    // prepare runpy function and arguments
+    let kwargs = PyDict::new_bound(py);
+    kwargs.set_item("run_name", "__main__")?;
+    let run_fn = runpy.getattr(if args.module {
+        // alter sys.argv[0] and `sys.modules["__main__"]`
+        kwargs.set_item("alter_sys", true)?;
+        "run_module"
+    } else {
+        "run_path"
+    })?;
+    // prepare sys.argv
+    let sys_argv = sys.getattr("argv")?.extract::<Vec<String>>()?;
+    sys.setattr("argv", {
+        // sys.argv[0] will be reset by runpy
+        let mut sys_argv = vec![String::new()];
+        sys_argv.extend(args.options);
+        sys_argv
+    })?;
+    // call runpy function and restore sys.argv
+    let res = run_fn.call((args.name,), Some(&kwargs));
+    sys.setattr("argv", sys_argv)?;
+    res?;
     Ok(())
 }
 
