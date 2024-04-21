@@ -40,12 +40,14 @@ fn cli() -> PyResult<()> {
         // return code 0 if we’re displaying help or version
         PySystemExit::new_err(!matches!(e.kind(), DisplayHelp | DisplayVersion))
     })?;
-    let collector = collector::Collector::default();
-    Python::with_gil(|py| {
-        Bound::new(py, collector)?.register()?;
+    let collector: collector::Collector = Python::with_gil(|py| {
+        let collector = Bound::new(py, collector::Collector::default())?;
+        collector.clone().register()?;
         runpy(args, py)?;
-        PyResult::Ok(())
+        collector.clone().deregister()?;
+        collector.extract()
     })?;
+    reporter::report(&collector);
     Ok(())
 }
 

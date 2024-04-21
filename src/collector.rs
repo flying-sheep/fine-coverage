@@ -8,8 +8,8 @@ use crate::tracer::{TraceEvent, Tracer};
 
 type LineStats = HashMap<(u32, u32, u32, u32), usize>;
 
-#[pyclass(unsendable)]
-#[derive(Default)]
+#[pyclass]
+#[derive(Default, Clone)]
 pub struct Collector {
     pub stats: HashMap<String, LineStats>,
 }
