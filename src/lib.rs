@@ -5,9 +5,10 @@ mod reporter;
 mod tracer;
 
 use clap::Parser;
-use pyo3::exceptions::PySystemExit;
+use pyo3::exceptions::{PySystemExit, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use regex::Regex;
 
 use crate::tracer::Register;
 
@@ -40,8 +41,16 @@ fn cli() -> PyResult<()> {
         // return code 0 if we’re displaying help or version
         PySystemExit::new_err(!matches!(e.kind(), DisplayHelp | DisplayVersion))
     })?;
+    let filter = args
+        .cov
+        .as_deref()
+        .map_or_else(
+            || Regex::new("^(|[^<].*)$"),
+            |cov| Regex::new(&format!(r"^(.+/)?{}(/.+)?\.py$", regex::escape(cov))),
+        )
+        .map_err(|e| PyValueError::new_err(format!("Could not regex: {e}")))?;
     let collector: collector::Collector = Python::with_gil(|py| {
-        let collector = Bound::new(py, collector::Collector::default())?;
+        let collector = Bound::new(py, collector::Collector::new(filter))?;
         collector.clone().register()?;
         runpy(args, py)?;
         collector.clone().deregister()?;

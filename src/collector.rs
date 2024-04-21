@@ -1,17 +1,27 @@
 use std::collections::HashMap;
 
 use pyo3::prelude::*;
-
 use pyo3::types::PyFrame;
+use regex::Regex;
 
 use crate::tracer::{TraceEvent, Tracer};
 
 type LineStats = HashMap<(u32, u32, u32, u32), usize>;
 
 #[pyclass]
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct Collector {
+    pub filter: Regex,
     pub stats: HashMap<String, LineStats>,
+}
+
+impl Collector {
+    pub fn new(filter: Regex) -> Self {
+        Self {
+            filter,
+            stats: HashMap::new(),
+        }
+    }
 }
 
 impl Tracer<TraceEvent> for Collector {
@@ -23,8 +33,8 @@ impl Tracer<TraceEvent> for Collector {
         let code = frame.getattr("f_code")?;
         let filename = code.getattr("co_filename")?;
         let filename = filename.extract::<&str>()?;
-        if filename.starts_with('<') {
-            // TODO: only collect own file instead
+        // TODO: more precise filtering
+        if !self.filter.is_match(filename) {
             return Ok(());
         }
 
