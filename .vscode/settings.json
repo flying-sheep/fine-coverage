@@ -1,5 +1,7 @@
 {
-    "python.analysis.typeCheckingMode": "strict",
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
+    "[rust]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    },
+    "rust-analyzer.check.command": "clippy",
 }
